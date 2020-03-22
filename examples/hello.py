@@ -1,2 +1,5 @@
+
+import time
+
 async def program(api):
-    await api.print('Hello world!')
+    print("moo")

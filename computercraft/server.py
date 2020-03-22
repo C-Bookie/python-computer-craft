@@ -193,10 +193,11 @@ class CCApplication(web.Application):
     def backdoor(request):
         with open(LUA_FILE, 'r') as f:
             fcont = f.read()
-        fcont = fcont.replace(
-            "local url = 'http://127.0.0.1:4343/'",
-            "local url = '{}://{}/'".format(request.scheme, request.host)
-        )
+            new_url = "local url = '{}://{}/'".format(request.scheme, request.host)
+            # fcont = fcont.replace(
+            #     "local url = 'http://127.0.0.1:8080/'",
+            #     new_url
+            # )
         return web.Response(text=fcont)
 
     def initialize(self, source_module):
