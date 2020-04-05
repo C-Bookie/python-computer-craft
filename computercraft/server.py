@@ -31,7 +31,7 @@ from .subapis.window import WindowAPI
 
 
 THIS_DIR = dirname(abspath(__file__))
-LUA_FILE = join(THIS_DIR, 'back.lua')
+LUA_FILE = join(THIS_DIR, 'back-debug.lua')
 DIGITS = string.digits + string.ascii_lowercase
 
 
@@ -193,11 +193,11 @@ class CCApplication(web.Application):
     def backdoor(request):
         with open(LUA_FILE, 'r') as f:
             fcont = f.read()
-            new_url = "local url = '{}://{}/'".format(request.scheme, request.host)
-            # fcont = fcont.replace(
-            #     "local url = 'http://127.0.0.1:8080/'",
-            #     new_url
-            # )
+            new_url = "local url = '{}://{}:8080/'".format(request.scheme, request.host)
+            fcont = fcont.replace(
+                "local url = 'http://127.0.0.1:8080/'",
+                new_url
+            )
         return web.Response(text=fcont)
 
     def initialize(self, source_module):

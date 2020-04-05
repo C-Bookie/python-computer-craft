@@ -35,7 +35,7 @@ setup(
     ],
     keywords='computercraft minecraft',
     packages=['computercraft', 'computercraft.subapis'],
-    package_data={'computercraft': ['back.lua']},
+    package_data={'computercraft': ['back-debug.lua']},
     install_requires=['aiohttp'],
     entry_points={
         'console_scripts': ['computercraft = computercraft.server:main'],

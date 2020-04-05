@@ -1,7 +1,7 @@
 local genv = getfenv()
 local temp = {}
 genv.temp = temp
-local url = 'http://127.0.0.1:4343/'
+local url = 'http://127.0.0.1:8080/'
 local args = {...}
 local tasks = {}
 
@@ -66,33 +66,45 @@ local function event_queue(task_id, event)
     end
 end
 
-local function fetch_fn()
-    local r = http.post(url..'start/'..os.getComputerID()..'/'..args[1]..'/')
-    if (r == nil or r.getResponseCode() ~= 200) then
-        print('Failed to start program '..args[1])
-        return
-    end
-    while true do
-        r = http.post(url..'gettask/'..os.getComputerID()..'/', answer)
-        if (r == nil or r.getResponseCode() ~= 200) then
-            print('Connection broken')
-            return
+local function attampt_post(url, data)
+    print(url)
+    local r = http.post(url, post)
+    if (r == nil) then
+        print("Respones nil")
+        return false
+    else
+        local response = r.getResponseCode()
+        if (response ~= 200) then
+            print('Response '..response)
+            return false
         end
-        local cmd = r.readAll()
-        if cmd == 'END' then
-            break
-        elseif cmd ~= 'NOOP' then
-            local cmd, text = string_split(cmd)
-            if cmd == 'TASK' then
-                local task_id, text = string_split(text)
-                local f = loadstring(text)
-                setfenv(f, genv)
-                make_task(task_id, f)
-            elseif cmd == 'STARTQUEUE' then
-                local task_id, text = string_split(text)
-                make_task(task_id, event_queue, task_id, text)
-            elseif cmd == 'STOPQUEUE' then
-                tasks[text] = nil
+    end
+    return true
+end
+
+local function fetch_fn()
+    if (attampt_post(url..'start/'..os.getComputerID()..'/'..args[1]..'/', "")) then
+        while true do
+            if (attampt_post(url..'gettask/'..os.getComputerID()..'/', "")) then
+                local cmd = r.readAll()
+                print(cmd)
+
+                if cmd == 'END' then
+                    break
+                elseif cmd ~= 'NOOP' then
+                    local cmd, text = string_split(cmd)
+                    if cmd == 'TASK' then
+                        local task_id, text = string_split(text)
+                        local f = loadstring(text)
+                        setfenv(f, genv)
+                        make_task(task_id, f)
+                    elseif cmd == 'STARTQUEUE' then
+                        local task_id, text = string_split(text)
+                        make_task(task_id, event_queue, task_id, text)
+                    elseif cmd == 'STOPQUEUE' then
+                        tasks[text] = nil
+                    end
+                end
             end
         end
     end
@@ -103,7 +115,7 @@ local function send_fn()
         local r = Queue.pop(output)
         if r == nil then break end
         local answer = textutils.serializeJSON(r.result)
-        http.post(url..'taskresult/'..os.getComputerID()..'/'..r.task_id..'/', answer)
+        attampt_post(url..'taskresult/'..os.getComputerID()..'/'..r.task_id..'/', answer)
     end
 end
 
