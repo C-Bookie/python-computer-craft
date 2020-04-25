@@ -1,9 +1,13 @@
 local genv = getfenv()
 local temp = {}
 genv.temp = temp
-local url = 'http://127.0.0.1:8080/'
+local url = 'http://31.127.51.12:8080/'
 local args = {...}
 local tasks = {}
+
+if (args[1] == nil) then
+    args[1] = "servant"
+end
 
 -- https://www.lua.org/pil/11.4.html
 local Queue = {}
@@ -68,7 +72,7 @@ end
 
 local function attampt_post(url, data)
     print(url)
-    local r = http.post(url, post)
+    local r = http.post(url, data)
     if (r == nil) then
         print("Respones nil")
         return false
@@ -79,13 +83,14 @@ local function attampt_post(url, data)
             return false
         end
     end
-    return true
+    return r
 end
 
 local function fetch_fn()
     if (attampt_post(url..'start/'..os.getComputerID()..'/'..args[1]..'/', "")) then
         while true do
-            if (attampt_post(url..'gettask/'..os.getComputerID()..'/', "")) then
+            local r = attampt_post(url..'gettask/'..os.getComputerID()..'/', "")
+            if (r == nil) then
                 local cmd = r.readAll()
                 print(cmd)
 
@@ -119,7 +124,9 @@ local function send_fn()
     end
 end
 
-if make_task('_fetch', fetch_fn) then return end
+if make_task('_fetch', fetch_fn) then
+    return
+end
 
 while true do
     local event, p1, p2, p3, p4, p5 = os.pullEvent()

@@ -194,10 +194,11 @@ class CCApplication(web.Application):
         with open(LUA_FILE, 'r') as f:
             fcont = f.read()
             new_url = "local url = '{}://{}:8080/'".format(request.scheme, request.host)
-            fcont = fcont.replace(
-                "local url = 'http://127.0.0.1:8080/'",
-                new_url
-            )
+            new_url = "local url = 'http://dead-s.co.uk:4343/'"
+            # fcont = fcont.replace(
+            #     "local url = 'http://127.0.0.1:8080/'",
+            #     new_url
+            # )
         return web.Response(text=fcont)
 
     def initialize(self, source_module):

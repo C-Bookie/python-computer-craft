@@ -1,5 +1,5 @@
 import numpy as np
-from unit import Unit
+from .unit import Unit
 import computercraft.errors
 
 async def dig(api):
