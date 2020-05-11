@@ -1,32 +1,32 @@
-local back = peripheral.wrap("back")
+local back = peripheral.wrap("top")
 local monitors = {
     "monitor_0",
     "monitor_1",
 }
+
 local rules = {}
+local sizes = {}
+
+sizes["monitor_0"] = 1
 rules["monitor_0"] = {
-    "                RULES:",
+    "                                 RULES:",
     "",
-    "1. No hacks exploits or third-party",
-    "   cheat systems.",
+    "1. No hacks exploits or third-party cheat systems.",
     "",
-    "2. No overly offensive or racist",
-    "   language.",
+    "2. No overly offensive or racist language.",
     "",
-    "3. Though historical buildings are not",
-    "   enforced they are appreciated.",
+    "3. Though historical buildings are not enforced they are appreciated.",
     "",
-    "4. No aggressive world griefing outside",
-    "   of world wars",
+    "4. No aggressive world griefing outside of world wars",
     "",
-    "5. No attempting to destroy dismantle",
-    "   or damage spawn island.",
+    "5. No attempting to destroy dismantle or damage spawn island.",
     "",
-    "6. No bypassing protection or land",
-    "   claims with exploits."
+    "6. No bypassing protection or land claims with exploits."
 }
+
+sizes["monitor_1"] = 1
 rules["monitor_1"] = {
-    "                TIPS:",
+    "                                 TIPS:",
     "",
     "To found a country, use:",
     "  /f c [country tag] [country name]",
@@ -45,13 +45,13 @@ rules["monitor_1"] = {
     "",
     "To invite someone to you're faction, use",
     "  /f invite"
-
 }
+
 
 for i in pairs(monitors) do
     local monitor = monitors[i]
     back.callRemote(monitor, "clear")
-    back.callRemote(monitor, "setTextScale", 1)
+    back.callRemote(monitor, "setTextScale", sizes[monitor])
     for i in pairs(rules[monitor]) do
         local rule = rules[monitor][i]
         print(rule)

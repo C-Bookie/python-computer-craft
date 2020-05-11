@@ -31,8 +31,12 @@ from .subapis.window import WindowAPI
 
 
 THIS_DIR = dirname(abspath(__file__))
-LUA_FILE = join(THIS_DIR, 'back-debug.lua')
+NOTICE_FILE = join(THIS_DIR, 'notice board.lua')
+START_FILE = join(THIS_DIR, 'startup.lua')
+BACK_FILE = join(THIS_DIR, 'back-debug.lua')
 DIGITS = string.digits + string.ascii_lowercase
+
+PORT = "8080"
 
 
 def base36(n):
@@ -148,6 +152,13 @@ formatters:
 '''
 
 
+def replace_address(request, fcont):
+    return fcont.replace(
+        "local url = 'http://127.0.0.1:8080/'",
+        "local url = '{}://{}:{}/'".format(request.scheme, request.host, PORT)
+    )
+
+
 def enable_request_logging():
     import logging.config
     import yaml
@@ -156,6 +167,7 @@ def enable_request_logging():
 
 class CCApplication(web.Application):
     async def start(self, request):
+        print(request)
         tid = int(request.match_info['turtle'])
         if tid in self['exchange']:
             # terminate old program
@@ -170,12 +182,15 @@ class CCApplication(web.Application):
         return web.Response(text='')
 
     async def gettask(self, request):
+        print(request)
         api = self['exchange'].get(int(request.match_info['turtle']))
         if api is None:
             return web.Response(text='END')
-        return web.Response(text=await api._cmd.get())
+        cmd = await api._cmd.get()
+        return web.Response(text=cmd)
 
     async def taskresult(self, request):
+        print(request)
         api = self['exchange'].get(int(request.match_info['turtle']))
         if api is not None:
             tid = request.match_info['task_id']
@@ -190,21 +205,35 @@ class CCApplication(web.Application):
         return web.Response(text='')
 
     @staticmethod
-    def backdoor(request):
-        with open(LUA_FILE, 'r') as f:
+    def start_script(request):
+        print(request)
+        with open(START_FILE, 'r') as f:
             fcont = f.read()
-            new_url = "local url = '{}://{}:8080/'".format(request.scheme, request.host)
-            new_url = "local url = 'http://dead-s.co.uk:4343/'"
-            # fcont = fcont.replace(
-            #     "local url = 'http://127.0.0.1:8080/'",
-            #     new_url
-            # )
+            fcont = replace_address(request, fcont)
+        return web.Response(text=fcont)
+
+    @staticmethod
+    def backdoor(request):
+        print(request)
+        with open(BACK_FILE, 'r') as f:
+            fcont = f.read()
+            fcont = replace_address(request, fcont)
+        return web.Response(text=fcont)
+
+    @staticmethod
+    def notice_script(request):
+        print(request)
+        with open(NOTICE_FILE, 'r') as f:
+            fcont = f.read()
+            fcont = replace_address(request, fcont)
         return web.Response(text=fcont)
 
     def initialize(self, source_module):
         self['source_module'] = source_module
         self['exchange'] = {}
-        self.router.add_get('/', self.backdoor)
+        self.router.add_get('/', self.start_script)
+        self.router.add_get('/back.lua', self.backdoor)
+        self.router.add_get('/notice.lua', self.notice_script)
         self.router.add_post('/start/{turtle}/{program}/', self.start)
         self.router.add_post('/gettask/{turtle}/', self.gettask)
         self.router.add_post('/taskresult/{turtle}/{task_id}/', self.taskresult)

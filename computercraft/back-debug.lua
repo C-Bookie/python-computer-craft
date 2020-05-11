@@ -1,7 +1,7 @@
 local genv = getfenv()
 local temp = {}
 genv.temp = temp
-local url = 'http://31.127.51.12:8080/'
+local url = 'http://127.0.0.1:8080/'
 local args = {...}
 local tasks = {}
 
@@ -70,16 +70,16 @@ local function event_queue(task_id, event)
     end
 end
 
-local function attampt_post(url, data)
-    print(url)
+local function attempt_post(url, data)
+    write(url.." ")
     local r = http.post(url, data)
     if (r == nil) then
-        print("Respones nil")
+        print("Response nil")
         return false
     else
         local response = r.getResponseCode()
+        print('Response '..response)
         if (response ~= 200) then
-            print('Response '..response)
             return false
         end
     end
@@ -87,10 +87,13 @@ local function attampt_post(url, data)
 end
 
 local function fetch_fn()
-    if (attampt_post(url..'start/'..os.getComputerID()..'/'..args[1]..'/', "")) then
+    if (attempt_post(url..'start/'..os.getComputerID()..'/'..args[1]..'/', "")) then
         while true do
-            local r = attampt_post(url..'gettask/'..os.getComputerID()..'/', "")
-            if (r == nil) then
+            local r = attempt_post(url..'gettask/'..os.getComputerID()..'/', "")
+            if (r == false) then
+                print('Connection broken')
+                return
+            else
                 local cmd = r.readAll()
                 print(cmd)
 
@@ -120,7 +123,7 @@ local function send_fn()
         local r = Queue.pop(output)
         if r == nil then break end
         local answer = textutils.serializeJSON(r.result)
-        attampt_post(url..'taskresult/'..os.getComputerID()..'/'..r.task_id..'/', answer)
+        attempt_post(url..'taskresult/'..os.getComputerID()..'/'..r.task_id..'/', answer)
     end
 end
 
