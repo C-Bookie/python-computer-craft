@@ -22,7 +22,6 @@ class Radio(Client):
                 "test1"
             ]
         })
-        self.toServer({"type": "newScreen"})
 
     def producer(self, msg):
         self.msg = msg

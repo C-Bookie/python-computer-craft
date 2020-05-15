@@ -51,10 +51,10 @@ class Piano(Client):
 
 def run():
 	sm: SessionManager = SessionManager()
-	sm.start()
+	sm.run()
 	# server.main()
-	piano: Piano = Piano()
-	piano.run()
+	# piano: Piano = Piano()
+	# piano.run()
 
 
 if __name__ == "__main__":

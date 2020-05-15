@@ -92,7 +92,7 @@ local function fetch_fn()
             r = attempt_post(url..'gettask/'..os.getComputerID()..'/', "")
             if (r == nil) then
                 print('Connection broken')
-                return
+                --return
             else
                 local cmd = r.readAll()
                 print(cmd)

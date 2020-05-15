@@ -147,6 +147,12 @@ class CCCommandBlock(CCPeripheral):
         return bool_success(await self._send('runCommand'))
 
 
+class CCTSpeaker(CCPeripheral):
+    async def playNote(self, instrument: str, volume: int, pitch: int) -> bool:
+        return bool_success(await self._send('playNote', instrument, volume, pitch))
+
+
+
 TYPE_MAP = {
     'drive': CCDrive,
     'monitor': CCMonitor,
@@ -154,6 +160,7 @@ TYPE_MAP = {
     'modem': CCModem,
     'printer': CCPrinter,
     'command': CCCommandBlock,
+    'speaker': CCTSpeaker,
 }
 
 
