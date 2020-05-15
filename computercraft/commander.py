@@ -26,11 +26,13 @@ class Piano(Client):
 
 	def run(self):
 		while True:
-			self.send_command("moo")
+			self.send_command("moo1")
+			self.send_command("moo2")
+			self.send_command("moo3")
 
 			loop = asyncio.new_event_loop()
 			asyncio.set_event_loop(loop)
-			loop.run_until_complete(asyncio.sleep(1))
+			loop.run_until_complete(asyncio.sleep(3))
 
 	def send_command(self, cmd):
 		self.send_data({

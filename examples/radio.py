@@ -3,12 +3,14 @@ import asyncio
 
 
 class Radio(Client):
-    def __init__(self):
+    def __init__(self, api):
         super().__init__()
-        self.queue = asyncio.Queue()
+        self.api = api
+
+        self.msg = "null"
 
         self.white_list_functions += [
-            "print"
+            "producer"
         ]
 
     def connect(self):
@@ -22,14 +24,8 @@ class Radio(Client):
         })
         self.toServer({"type": "newScreen"})
 
-    async def producer(self, item):
-        # loop = asyncio.new_event_loop()
-        # asyncio.set_event_loop(loop)
-        # loop.run_until_complete(self.queue.put(item))
-        await self.queue.put(item)
-
-    async def consumer(self):
-        return await self.queue.get()
+    def producer(self, msg):
+        self.msg = msg
 
     def toServer(self, msg):
         self.send_data({
