@@ -71,26 +71,26 @@ local function event_queue(task_id, event)
 end
 
 local function attempt_post(url, data)
-    write(url.." ")
-    local r = http.post(url, data)
-    if (r == nil) then
-        print("Response nil")
-        return false
+    write(url)
+    local response = http.post(url, data)
+    if (response == nil) then
+        print(" - nil")
     else
-        local response = r.getResponseCode()
-        print('Response '..response)
-        if (response ~= 200) then
-            return false
+        local code = response.getResponseCode()
+        print(' - '..code)
+        if (code ~= 200) then
+            return nil
         end
     end
-    return r
+    return response
 end
 
 local function fetch_fn()
-    if (attempt_post(url..'start/'..os.getComputerID()..'/'..args[1]..'/', "")) then
+    local r = attempt_post(url..'start/'..os.getComputerID()..'/'..args[1]..'/', "")
+    if (r ~= nil) then
         while true do
-            local r = attempt_post(url..'gettask/'..os.getComputerID()..'/', "")
-            if (r == false) then
+            r = attempt_post(url..'gettask/'..os.getComputerID()..'/', "")
+            if (r == nil) then
                 print('Connection broken')
                 return
             else

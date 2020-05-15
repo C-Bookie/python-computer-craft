@@ -1,14 +1,8 @@
 import numpy as np
 import computercraft.errors
-from caduceussocket.connection import Client
 
 
-class Radio(Client):
-	def __init__(self):
-		super().__init__()
-
-
-class Unit(Radio):
+class Unit:
 	left = np.array([
 		[0, 0, 1],
 		[0, 1, 0],
@@ -22,7 +16,6 @@ class Unit(Radio):
 	])
 
 	def __init__(self, api):
-		super().__init__()
 		self.api = api
 		self.cods = np.array([0, 0, 0])  # [X, Y, Z]
 		self.dire = np.array([1, 0, 0])  # cods shall be iterated by this array when moving forward
