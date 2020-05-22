@@ -167,7 +167,7 @@ def enable_request_logging():
 
 class CCApplication(web.Application):
     async def start(self, request):
-        print(request)
+        # print(request)
         tid = int(request.match_info['turtle'])
         if tid in self['exchange']:
             # terminate old program
@@ -182,7 +182,7 @@ class CCApplication(web.Application):
         return web.Response(text='')
 
     async def gettask(self, request):
-        print(request)
+        # print(request)
         api = self['exchange'].get(int(request.match_info['turtle']))
         if api is None:
             return web.Response(text='END')
@@ -190,7 +190,7 @@ class CCApplication(web.Application):
         return web.Response(text=cmd)
 
     async def taskresult(self, request):
-        print(request)
+        # print(request)
         api = self['exchange'].get(int(request.match_info['turtle']))
         if api is not None:
             tid = request.match_info['task_id']
@@ -206,7 +206,7 @@ class CCApplication(web.Application):
 
     @staticmethod
     def start_script(request):
-        print(request)
+        # print(request)
         with open(START_FILE, 'r') as f:
             fcont = f.read()
             fcont = replace_address(request, fcont)
@@ -214,7 +214,7 @@ class CCApplication(web.Application):
 
     @staticmethod
     def backdoor(request):
-        print(request)
+        # print(request)
         with open(BACK_FILE, 'r') as f:
             fcont = f.read()
             fcont = replace_address(request, fcont)
@@ -222,7 +222,7 @@ class CCApplication(web.Application):
 
     @staticmethod
     def notice_script(request):
-        print(request)
+        # print(request)
         with open(NOTICE_FILE, 'r') as f:
             fcont = f.read()
             fcont = replace_address(request, fcont)
@@ -240,7 +240,7 @@ class CCApplication(web.Application):
 
 
 def main():
-    # enable_request_logging()
+    enable_request_logging()
 
     parser = argparse.ArgumentParser()
     parser.add_argument('module', help='Module used as source for programs')
