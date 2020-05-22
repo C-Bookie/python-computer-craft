@@ -11,8 +11,6 @@ class Piano(Client):
 			"note"
 		]
 
-		self.speaker = await self.api.peripheral.wrap("bottom")
-
 	async def run(self):
 		await self.connect()
 		await self.send({
@@ -21,34 +19,24 @@ class Piano(Client):
 				"piano"
 			]
 		})
+		self.speaker = await self.api.peripheral.wrap("bottom")
 		await asyncio.gather(
 			super().run(),
 			# self.loop()
 		)
 
-	def note(self, note, state):
+	async def note(self, msg, state):
 		if state:
+			note = msg - 43
 			await self.api.print(note)
 			await self.speaker.playNote("guitar", 3, note)
-		else:
-			self.msg = False
 
 
 async def servant(api):
-
 	print("New unit registering")
 	await api.print("Connecting...")
 	piano = Piano(api)
-	reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
 	print("New unit online")
 
-	while True:
-		msg = await reader.read()
-		# radio.loop()  # fixme non async function socket.socket(socket.AF_INET, socket.SOCK_STREAM).accept().recv()
-		# msg = radio.msg
-		if msg != False:
-			note = msg -43
-			await api.print(note)
-			await self.speaker.playNote("guitar", 3, note)
+	await piano.run()
 
-	writer.close()

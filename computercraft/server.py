@@ -240,7 +240,7 @@ class CCApplication(web.Application):
 
 
 def main():
-    enable_request_logging()
+    # enable_request_logging()
 
     parser = argparse.ArgumentParser()
     parser.add_argument('module', help='Module used as source for programs')

@@ -74,6 +74,20 @@ class Client(Responder):
 	async def connect(self):
 		self.reader, self.writer = await asyncio.open_connection('127.0.0.1', 8888)
 
+	async def request(self, function, *args):
+		await self.send({
+			"type": function,
+			"args": args
+		})
+
+	async def broadcast(self, tag, function, *args):
+		await self.request("broadcast", {
+					"type": function,
+					"args": args
+				},
+				tag
+		)
+
 
 class Node(Responder):
 	def __init__(self, host, reader, writer):
@@ -82,16 +96,17 @@ class Node(Responder):
 
 		self.subscriptions = {"all"}
 		self.white_list_functions += [
-			"subscribe"
+			"subscribe",
+			"broadcast"
 		]
 
-	def subscribe(self, tag):
+	async def subscribe(self, tag):
 		self.subscriptions.add(tag)
 
-	def broadcast(self, message, tag):
+	async def broadcast(self, message, tag):
 		for node in self.host.connections:
 			if tag in node.subscriptions:  # todo change to channels containing Nodes to avoid for loops
-				node.send(message)
+				await node.send(message)
 
 
 class Host:
