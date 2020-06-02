@@ -79,12 +79,7 @@ class MidiKeyboard(Client):
 
 	async def run(self):
 		await self.connect()
-		await self.send({
-			"type": "subscribe",
-			"args": [
-				"keyboard"
-			]
-		})
+		await self.request("subscribe", "keyboard")
 		await asyncio.gather(
 			super().run(),
 			self.loop()
@@ -96,32 +91,9 @@ class MidiKeyboard(Client):
 			for event in events:
 				if event.type in [pygame.KEYDOWN, pygame.KEYUP]:
 					if event.key == pygame.K_SPACE:
-						await self.send({
-							"type": "broadcast",
-							"args": [
-								{
-									"type": "sustain",
-									"args": [
-										event.type == pygame.KEYDOWN
-									]
-								},
-								"piano"
-							]
-						})
+						await self.broadcast("sustain", "piano", event.type == pygame.KEYDOWN)
 					elif event.key in self.mapping:
-						await self.send({
-							"type": "broadcast",
-							"args": [
-								{
-									"type": "note",
-									"args": [
-										self.mapping[event.key] + self.step_up,
-										event.type == pygame.KEYDOWN
-									]
-								},
-								"piano"
-							]
-						})
+						await self.broadcast("note", "piano", self.mapping[event.key] + self.step_up, event.type == pygame.KEYDOWN)
 				if event.type == pygame.QUIT:
 					return
 

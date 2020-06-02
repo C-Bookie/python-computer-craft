@@ -13,12 +13,7 @@ class Piano(Client):
 
 	async def run(self):
 		await self.connect()
-		await self.send({
-			"type": "subscribe",
-			"args": [
-				"piano"
-			]
-		})
+		await self.request("subscribe", "piano")
 		self.speaker = await self.api.peripheral.wrap("bottom")
 		await asyncio.gather(
 			super().run(),

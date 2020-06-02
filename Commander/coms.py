@@ -4,8 +4,13 @@ import json
 ETX = b'\x03'
 ETX_LEN = len(ETX)
 
+# todo full type hinting
+
 
 class Radio:
+	reader: asyncio.StreamReader
+	writer: asyncio.StreamWriter
+
 	def __init__(self, reader, writer):
 		self.reader = reader
 		self.writer = writer
@@ -21,13 +26,24 @@ class Radio:
 		return message
 
 
+def json_encoder(obj):
+	if isinstance(obj, set):
+		return list(obj)
+	return obj.list()
+
+
 class Responder(Radio):
 	def __init__(self, reader, writer):
 		super().__init__(reader, writer)
 
-		self.white_list_functions = []
+		self.white_list_functions = [
+			"close"
+		]
+
+		self.ready = self.reader is not None
 
 	async def callback(self, response):
+		print(response)
 		if "type" in response and response["type"] in self.white_list_functions:
 			function = getattr(self, response["type"])
 			if "args" in response and response["args"] is not None:
@@ -38,14 +54,8 @@ class Responder(Radio):
 		else:
 			print("Request unrecognised by server: " + str(response))
 
-	async def send(self, data):
-		def set_default(obj):
-			if isinstance(obj, set):
-				return list(obj)
-			return obj.list()
-
-		# raise TypeError
-		message = json.dumps(data, default=set_default)
+	async def send(self, json_msg):
+		message = json.dumps(json_msg, default=json_encoder)
 		await super().send(message)
 
 	async def receive(self):
@@ -53,32 +63,39 @@ class Responder(Radio):
 		return json.loads(message)
 
 	async def run(self):
-		try:
-			while True:
-				message = await self.receive()
-				await self.callback(message)
-		finally:
-			self.writer.close()
-			self.reader, self.writer = None, None
+		if self.ready:
+			try:
+				while self.ready:
+					message = await self.receive()
+					await self.callback(message)
+			finally:
+				self.writer.close()
+				await self.writer.wait_closed()
+				self.reader, self.writer = None, None  # todo review
+
+	async def close(self):
+		self.ready = False
 
 
 class Client(Responder):
 	def __init__(self, addr='127.0.0.1', port=8888):
-		super().__init__(None, None)
+		super().__init__(None, None)  # todo review
 		self.addr = addr
 		self.port = port
 
-		self.white_list_functions = []
+		self.white_list_functions += []
 
-	# asyncio.run(client.client())
 	async def connect(self):
 		self.reader, self.writer = await asyncio.open_connection('127.0.0.1', 8888)
+		self.ready = True
 
 	async def request(self, function, *args):
-		await self.send({
+		json_msg = {
 			"type": function,
 			"args": args
-		})
+		}
+		print(json_msg)
+		await self.send(json_msg)
 
 	async def broadcast(self, tag, function, *args):
 		await self.request("broadcast", {
@@ -108,6 +125,14 @@ class Node(Responder):
 			if tag in node.subscriptions:  # todo change to channels containing Nodes to avoid for loops
 				await node.send(message)
 
+	async def close_client(self):
+		json_msg = {"type": "close"}
+		await self.send(json_msg)
+
+		message = json.dumps(json_msg, default=json_encoder)  # todo move to Radio
+		data = message.encode()
+		self.reader.feed_data(data + ETX)
+
 
 class Host:
 	def __init__(self):
@@ -122,12 +147,20 @@ class Host:
 		finally:
 			self.connections.remove(node)
 
-	# asyncio.run(radio.host())
 	async def run(self):
-		server = await asyncio.start_server(self.handler, '127.0.0.1', 8888)
+		self.server = await asyncio.start_server(self.handler, '127.0.0.1', 8888)
 
-		async with server:
-			await server.serve_forever()
+		await self.server.start_serving()
+
+		# async with self.server:
+		# 	await self.server.serve_forever()
+
+	async def close(self):
+		for node in self.connections:
+			await node.close_client()
+
+		self.server.close()
+		await self.server.wait_closed()
 
 
 def main():

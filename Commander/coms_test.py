@@ -9,46 +9,66 @@ class Marko(Client):
 		super().__init__()
 		self.white_list_functions += [
 			"echo",
-			"print"
+			"pass_along",
+			"add"
 		]
 
-	async def echo(self, message):
-		print(message)
-		await self.broadcast("test1", "print", message)
+		self.i = 1
 
-	async def print(self, message):
-		print(message)
+	async def echo(self, message):
+		await self.broadcast("test", "print", message)
+
+	async def pass_along(self, tag):
+		await self.broadcast(tag, "add", self.i)
+
+	async def add(self, n):
+		self.i += n
 
 
 class MyTestCase(unittest.TestCase):
+	host = Host()
+	client1 = Marko()
+	client2 = Marko()
+
+	ready = False
+
+	async def run_clients(self, callback):
+		async def setup():
+			await asyncio.gather(
+				self.client1.connect(),
+				self.client2.connect()
+			)
+			await asyncio.gather(
+				self.client1.request("subscribe", "client1"),
+				self.client2.request("subscribe", "client2")
+			)
+			await asyncio.gather(
+				self.client1.run(),
+				self.client2.run(),
+				callback()
+			)
+		# await asyncio.gather(
+		await self.host.run(),
+		await setup()
+		# )
+
 	def test_something(self):
-		host = Host()
-		client1 = Marko()
-		client2 = Marko()
+		async def broadcast_test():
+			await self.client1.broadcast("client2", "pass_along", "client1")
+			await self.client1.pass_along("client2")
+			await self.client2.pass_along("client1")
+
+			await asyncio.sleep(1)
+
+			await self.host.close()
 
 
-		async def run_clients():
-			await asyncio.gather(
-				client1.connect(),
-				client2.connect()
-			)
-			await asyncio.gather(
-				client1.request("subscribe", "test1"),
-				client2.request("subscribe", "test2")
-			)
-			await asyncio.gather(
-				client1.run(),
-				client2.run(),
-				client2.broadcast("test1", "print", "moo")
-			)
+			print("rsdkyrxdr")
 
-		async def run():
-			await asyncio.gather(
-				host.run(),
-				run_clients()
-			)
+		asyncio.run(self.run_clients(broadcast_test))
 
-		asyncio.run(run())
+		self.assertEqual(3, self.client1.i)
+		self.assertEqual(2, self.client2.i)
 
 
 if __name__ == '__main__':
