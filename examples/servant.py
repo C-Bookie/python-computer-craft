@@ -1,8 +1,12 @@
 import asyncio
 from coms import Client
+# from computercraft.server import CCAPI
+# from subapis.peripheral import CCTSpeaker
 
 
 class Piano(Client):
+	# speaker: CCTSpeaker
+
 	def __init__(self, api):
 		super().__init__()
 		self.api = api
@@ -35,3 +39,4 @@ async def servant(api):
 
 	await piano.run()
 
+# wget http://95.148.187.63:8080 startup
