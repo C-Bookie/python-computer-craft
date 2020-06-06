@@ -19,7 +19,7 @@ class Radio:
 	def prepare(self, message: str) -> bytes:
 		data = message.encode()
 		if self.ETX in data:
-			raise Exception('message contains exit tag: ' + self.ETX.decode())  # todo create custom Exception
+			raise Exception('message contains exit sequence: ' + self.ETX.decode())  # todo create custom Exception
 		return data + self.ETX
 
 	def unpack(self, data: bytes) -> str:
@@ -30,16 +30,20 @@ class Radio:
 		self.writer.write(data)
 
 	async def send(self, message: str) -> None:
+		print("(", asyncio.Task.current_task().get_name(), ") Sending: ", message)
 		self.sequence(message)
 		await self.writer.drain()
 
 	async def feedback(self, message: str) -> None:
 		data = self.prepare(message)
+		print("(", asyncio.Task.current_task().get_name(), ") Feeding-back: ", message)
 		self.reader.feed_data(data)
 
 	async def receive(self) -> str:
 		data = await self.reader.readuntil(self.ETX)
-		return self.unpack(data)
+		message = self.unpack(data)
+		print("(", asyncio.Task.current_task().get_name(), ") Received: ", message)
+		return message
 
 
 def json_encoder(obj):
@@ -51,8 +55,10 @@ def json_encoder(obj):
 class Responder(Radio):
 	ready = False
 
-	def __init__(self, reader=None, writer=None):
+	def __init__(self, name, reader=None, writer=None):
 		super().__init__(reader, writer)
+
+		self.__name__ = type(self).__name__ + "-" + name
 
 		self.white_list_functions: List[str] = [  # todo change to function reference in a json friendly way
 			"close"
@@ -61,7 +67,6 @@ class Responder(Radio):
 		self.ready = reader is not None
 
 	async def callback(self, response: dict) -> None:
-		print(response)
 		if "type" in response and response["type"] in self.white_list_functions:
 			function: Callable = getattr(self, response["type"])
 			if "args" in response and response["args"] is not None:
@@ -70,9 +75,11 @@ class Responder(Radio):
 				args = ()
 			await function(*args)
 		else:
-			print("Request unrecognised by server: " + str(response))
+			print("(", asyncio.Task.current_task().get_name(), ") Request unrecognised by server: " + str(response))
 
 	async def run(self) -> None:
+		asyncio.Task.current_task().set_name(self.__name__ + "-Transmitter")
+		print("(", asyncio.Task.current_task().get_name(), ") listening")
 		if self.ready:
 			try:
 				while self.ready:
@@ -112,8 +119,8 @@ class Responder(Radio):
 
 
 class Client(Responder):
-	def __init__(self, addr='127.0.0.1', port=8888):
-		super().__init__()
+	def __init__(self, name, addr='127.0.0.1', port=8888):
+		super().__init__(name)
 		self.addr = addr
 		self.port = port
 
@@ -148,7 +155,8 @@ class Host:
 		self.connections: List[Node] = list()
 
 	async def handler(self, reader: StreamReader, writer: StreamWriter):
-		node = Node(self, reader, writer)
+		name = asyncio.Task.current_task().get_name()
+		node = Node(name, self, reader, writer)
 		self.connections.append(node)
 		try:
 			await node.run()
@@ -169,8 +177,8 @@ class Host:
 
 
 class Node(Responder):
-	def __init__(self, host: Host, reader, writer):
-		super().__init__(reader, writer)
+	def __init__(self, name, host: Host, reader, writer):
+		super().__init__(name, reader, writer)
 		self.host = host
 
 		self.subscriptions: Set[str] = {"all"}

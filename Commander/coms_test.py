@@ -5,8 +5,8 @@ from coms import Host, Client
 
 
 class Marko(Client):  # example implementing the Client class
-	def __init__(self):
-		super().__init__()
+	def __init__(self, name):
+		super().__init__(name)
 		self.white_list_functions += [  # names of class functions appended to the list are accessible by the Host
 			"echo",
 			"print",
@@ -32,8 +32,8 @@ class Marko(Client):  # example implementing the Client class
 
 class MyTestCase(unittest.TestCase):
 	host = Host()
-	client1 = Marko()
-	client2 = Marko()
+	client1 = Marko("client1")
+	client2 = Marko("client2")
 
 	async def run_clients(self, callback):
 		async def setup():
@@ -55,6 +55,7 @@ class MyTestCase(unittest.TestCase):
 
 	def test_something(self):
 		async def broadcast_test():
+			asyncio.Task.current_task().set_name("Broadcast Test")
 			await self.client1.broadcast("client2", "pass_along", "client1")
 			await self.client1.pass_along("client2")
 			await self.client2.pass_along("client1")

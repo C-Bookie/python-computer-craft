@@ -8,8 +8,8 @@ from coms import Client
 
 
 class MidiKeyboard(Client):
-	def __init__(self):
-		super().__init__()
+	def __init__(self, name):
+		super().__init__(name)
 		self.step_up = 0
 
 		self.mapping = {
@@ -79,7 +79,8 @@ class MidiKeyboard(Client):
 
 	async def run(self):
 		await self.connect()
-		await self.request("subscribe", "keyboard")
+		# await self.request("subscribe", "keyboard")
+		await self.request("subscribe", "piano")
 		await asyncio.gather(
 			super().run(),
 			self.loop()
@@ -91,9 +92,9 @@ class MidiKeyboard(Client):
 			for event in events:
 				if event.type in [pygame.KEYDOWN, pygame.KEYUP]:
 					if event.key == pygame.K_SPACE:
-						await self.broadcast("sustain", "piano", event.type == pygame.KEYDOWN)
+						await self.broadcast("piano", "sustain", event.type == pygame.KEYDOWN)
 					elif event.key in self.mapping:
-						await self.broadcast("note", "piano", self.mapping[event.key] + self.step_up, event.type == pygame.KEYDOWN)
+						await self.broadcast("piano", "note", self.mapping[event.key] + self.step_up, event.type == pygame.KEYDOWN)
 				if event.type == pygame.QUIT:
 					return
 
@@ -102,5 +103,5 @@ class MidiKeyboard(Client):
 
 
 if __name__ == "__main__":
-	keyboard = MidiKeyboard()
+	keyboard = MidiKeyboard("Piano")
 	asyncio.run(keyboard.run())
