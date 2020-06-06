@@ -72,22 +72,6 @@ class Responder(Radio):
 		else:
 			print("Request unrecognised by server: " + str(response))
 
-	def sequence(self, json_dict: dict) -> None:
-		message = json.dumps(json_dict, default=json_encoder)
-		super().sequence(message)
-
-	async def send(self, json_dict: dict) -> None:
-		message = json.dumps(json_dict, default=json_encoder)
-		await super().send(message)
-
-	async def feedback(self, json_dict: dict) -> None:
-		message = json.dumps(json_dict, default=json_encoder)
-		await super().feedback(message)
-
-	async def receive(self) -> dict:
-		message = await super().receive()
-		return json.loads(message)
-
 	async def run(self) -> None:
 		if self.ready:
 			try:
@@ -101,6 +85,30 @@ class Responder(Radio):
 
 	async def close(self) -> None:
 		self.ready = False
+
+	def prepare(self, json_dict: dict) -> bytes:
+		message = json.dumps(json_dict, default=json_encoder)
+		return super().prepare(message)
+
+	def unpack(self, data: bytes) -> dict:
+		message = super().unpack(data)
+		return json.loads(message)
+
+	def sequence(self, json_dict: dict) -> None:
+		# noinspection PyTypeChecker
+		super().sequence(json_dict)
+
+	async def send(self, json_dict: dict) -> None:
+		# noinspection PyTypeChecker
+		await super().send(json_dict)
+
+	async def feedback(self, json_dict: dict) -> None:
+		# noinspection PyTypeChecker
+		await super().feedback(json_dict)
+
+	async def receive(self) -> dict:
+		# noinspection PyTypeChecker
+		return await super().receive()
 
 
 class Client(Responder):
