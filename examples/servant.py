@@ -8,7 +8,7 @@ class Piano(Client):
 	# speaker: CCTSpeaker
 
 	def __init__(self, api):
-		super().__init__()
+		super().__init__("Speaker")
 		self.api = api
 
 		self.white_list_functions += [
@@ -27,7 +27,7 @@ class Piano(Client):
 	async def note(self, msg, state):
 		if state:
 			note = msg - 43
-			await self.api.print(note)
+			# await self.api.print(note)
 			await self.speaker.playNote("guitar", 3, note)
 
 

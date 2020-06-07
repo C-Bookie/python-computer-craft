@@ -1,7 +1,6 @@
 import asyncio
 
 import pygame
-import mido
 import pygame.midi
 
 from coms import Client
@@ -79,8 +78,7 @@ class MidiKeyboard(Client):
 
 	async def run(self):  # todo create try catch
 		await self.connect()
-		# await self.request("subscribe", "keyboard")
-		await self.request("subscribe", "piano")
+		await self.request("subscribe", "keyboard")
 		await asyncio.gather(
 			super().run(),
 			self.loop()
@@ -91,7 +89,7 @@ class MidiKeyboard(Client):
 		clock = pygame.time.Clock()
 		gap = 1/60
 		while True:
-			events = pygame.event.get()
+			events = pygame.event.get()  # may need pump=True
 			if not self.ready:
 				return
 			for event in events:
