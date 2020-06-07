@@ -88,9 +88,10 @@ class MidiKeyboard(Client):
 
 	async def loop(self):
 		asyncio.current_task().set_name(self.__name__ + "-Transmitter")
+		clock = pygame.time.Clock()
+		gap = 1/60
 		while True:
 			events = pygame.event.get()
-			await asyncio.sleep(0)  # todo review
 			if not self.ready:
 				return
 			for event in events:
@@ -105,6 +106,10 @@ class MidiKeyboard(Client):
 
 			self.screen.blit(self.background, (0, 0))
 			pygame.display.update()
+
+			clock.tick()
+			wait = gap - (clock.get_time() / 1000)
+			await asyncio.sleep(wait)  # todo review
 
 
 if __name__ == "__main__":

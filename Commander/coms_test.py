@@ -55,7 +55,7 @@ class MyTestCase(unittest.TestCase):
 
 	def test_something(self):
 		async def broadcast_test():
-			asyncio.Task.current_task().set_name("Broadcast Test")
+			asyncio.current_task().set_name("Broadcast Test")
 			await self.client1.broadcast("client2", "pass_along", "client1")
 			await self.client1.pass_along("client2")
 			await self.client2.pass_along("client1")
