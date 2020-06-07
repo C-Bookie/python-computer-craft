@@ -77,7 +77,7 @@ class MidiKeyboard(Client):
 		self.background = self.background.convert()
 		self.background.fill((250, 250, 250))
 
-	async def run(self):
+	async def run(self):  # todo create try catch
 		await self.connect()
 		# await self.request("subscribe", "keyboard")
 		await self.request("subscribe", "piano")
@@ -89,6 +89,7 @@ class MidiKeyboard(Client):
 	async def loop(self):
 		while True:
 			events = pygame.event.get()
+			await asyncio.sleep(0)  # todo review
 			for event in events:
 				if event.type in [pygame.KEYDOWN, pygame.KEYUP]:
 					if event.key == pygame.K_SPACE:
@@ -96,10 +97,12 @@ class MidiKeyboard(Client):
 					elif event.key in self.mapping:
 						await self.broadcast("piano", "note", self.mapping[event.key] + self.step_up, event.type == pygame.KEYDOWN)
 				if event.type == pygame.QUIT:
+					await self.quit()
 					return
 
 			self.screen.blit(self.background, (0, 0))
-			pygame.display.flip()
+			# pygame.display.flip()
+			pygame.display.update()
 
 
 if __name__ == "__main__":

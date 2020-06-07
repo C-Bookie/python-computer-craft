@@ -4,7 +4,13 @@ import json
 
 from typing import List, Callable, Set
 
+import datetime
+
 # todo full type hinting
+
+
+def dprint(type, *args):
+	print(str(datetime.datetime.now()) + ": (" + asyncio.current_task().get_name() + ") " + type + ": \n\t", *args)
 
 
 class Radio:
@@ -30,19 +36,19 @@ class Radio:
 		self.writer.write(data)
 
 	async def send(self, message: str) -> None:
-		print("(", asyncio.Task.current_task().get_name(), ") Sending: ", message)
+		dprint("Sending", message)
 		self.sequence(message)
 		await self.writer.drain()
 
 	async def feedback(self, message: str) -> None:
 		data = self.prepare(message)
-		print("(", asyncio.Task.current_task().get_name(), ") Feeding-back: ", message)
+		dprint("Feeding-back", message)
 		self.reader.feed_data(data)
 
 	async def receive(self) -> str:
 		data = await self.reader.readuntil(self.ETX)
 		message = self.unpack(data)
-		print("(", asyncio.Task.current_task().get_name(), ") Received: ", message)
+		dprint("Received", message)
 		return message
 
 
@@ -61,6 +67,7 @@ class Responder(Radio):
 		self.__name__ = type(self).__name__ + "-" + name
 
 		self.white_list_functions: List[str] = [  # todo change to function reference in a json friendly way
+			"echo",
 			"close"
 		]
 
@@ -75,11 +82,11 @@ class Responder(Radio):
 				args = ()
 			await function(*args)
 		else:
-			print("(", asyncio.Task.current_task().get_name(), ") Request unrecognised by server: " + str(response))
+			print("(", asyncio.current_task().get_name(), ") Request unrecognised by server: " + str(response))
 
 	async def run(self) -> None:
-		asyncio.Task.current_task().set_name(self.__name__ + "-Transmitter")
-		print("(", asyncio.Task.current_task().get_name(), ") listening")
+		asyncio.current_task().set_name(self.__name__ + "-Transmitter")
+		dprint("listening")
 		if self.ready:
 			try:
 				while self.ready:
@@ -90,8 +97,16 @@ class Responder(Radio):
 				await self.writer.wait_closed()
 				self.reader, self.writer = None, None
 
+	async def echo(self, message: str) -> None:
+		print(message)
+
 	async def close(self) -> None:
 		self.ready = False
+
+	async def quit(self) -> None:
+		json_dict = {"type": "close"}
+		await self.send(json_dict)
+		await self.feedback(json_dict)
 
 	def prepare(self, json_dict: dict) -> bytes:
 		message = json.dumps(json_dict, default=json_encoder)
@@ -155,7 +170,7 @@ class Host:
 		self.connections: List[Node] = list()
 
 	async def handler(self, reader: StreamReader, writer: StreamWriter):
-		name = asyncio.Task.current_task().get_name()
+		name = asyncio.current_task().get_name()
 		node = Node(name, self, reader, writer)
 		self.connections.append(node)
 		try:
@@ -166,11 +181,11 @@ class Host:
 	async def run(self):
 		self.server = await asyncio.start_server(self.handler, self.addr, self.port)
 		await self.server.start_serving()
-		print(f'Serving on {self.server.sockets[0].getsockname()}')
+		dprint("Starting", f'Serving on {self.server.sockets[0].getsockname()}')
 
 	async def close(self):
 		for node in self.connections:
-			await node.close_client()
+			await node.quit()
 
 		self.server.close()
 		await self.server.wait_closed()
@@ -194,11 +209,6 @@ class Node(Responder):
 		for node in self.host.connections:
 			if tag in node.subscriptions:  # todo change to channels containing Nodes to avoid for loops
 				await node.send(json_dict)
-
-	async def close_client(self):
-		json_dict = {"type": "close"}
-		await self.send(json_dict)
-		await self.feedback(json_dict)
 
 
 def main():
