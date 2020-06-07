@@ -87,9 +87,12 @@ class MidiKeyboard(Client):
 		)
 
 	async def loop(self):
+		asyncio.current_task().set_name(self.__name__ + "-Transmitter")
 		while True:
 			events = pygame.event.get()
 			await asyncio.sleep(0)  # todo review
+			if not self.ready:
+				return
 			for event in events:
 				if event.type in [pygame.KEYDOWN, pygame.KEYUP]:
 					if event.key == pygame.K_SPACE:
@@ -101,7 +104,6 @@ class MidiKeyboard(Client):
 					return
 
 			self.screen.blit(self.background, (0, 0))
-			# pygame.display.flip()
 			pygame.display.update()
 
 

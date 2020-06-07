@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 from asyncio import StreamReader, StreamWriter, AbstractServer
 import json
 
@@ -6,15 +7,12 @@ from typing import List, Callable, Set
 
 import datetime
 
-# todo full type hinting
 
-
-def dprint(type, *args):
-	print(str(datetime.datetime.now()) + ": (" + asyncio.current_task().get_name() + ") " + type + ": \n\t", *args)
+def dprint(message_type: str, *args) -> None:
+	print(str(datetime.datetime.now()) + ": (" + asyncio.current_task().get_name() + ") " + message_type + ": \n\t", *args)
 
 
 class Radio:
-
 	ETX = b'\x03'  # end of transmission tag
 	ETX_LEN = len(ETX)
 
@@ -59,8 +57,6 @@ def json_encoder(obj):
 
 
 class Responder(Radio):
-	ready = False
-
 	def __init__(self, name, reader=None, writer=None):
 		super().__init__(reader, writer)
 
@@ -80,33 +76,36 @@ class Responder(Radio):
 				args = response["args"]
 			else:
 				args = ()
-			await function(*args)
+
+			if inspect.iscoroutinefunction(function):
+				await function(*args)
+			else:
+				function(*args)
 		else:
 			print("(", asyncio.current_task().get_name(), ") Request unrecognised by server: " + str(response))
 
 	async def run(self) -> None:
-		asyncio.current_task().set_name(self.__name__ + "-Transmitter")
-		dprint("listening")
+		asyncio.current_task().set_name(self.__name__ + "-Receiver")
+		dprint("listening", "Begun")
 		if self.ready:
 			try:
 				while self.ready:
 					message = await self.receive()
 					await self.callback(message)
+			except ConnectionResetError:
+				dprint("Error", "Connection lost")
 			finally:
-				self.writer.close()
-				await self.writer.wait_closed()
-				self.reader, self.writer = None, None
+				self.close()
+				if self.writer.close():
+					await self.writer.wait_closed()
+					# self.reader, self.writer = None, None
+				dprint("listening", "Ended")
 
-	async def echo(self, message: str) -> None:
+	def echo(self, message: str) -> None:
 		print(message)
 
-	async def close(self) -> None:
+	def close(self) -> None:
 		self.ready = False
-
-	async def quit(self) -> None:
-		json_dict = {"type": "close"}
-		await self.send(json_dict)
-		await self.feedback(json_dict)
 
 	def prepare(self, json_dict: dict) -> bytes:
 		message = json.dumps(json_dict, default=json_encoder)
@@ -117,20 +116,33 @@ class Responder(Radio):
 		return json.loads(message)
 
 	def sequence(self, json_dict: dict) -> None:
+		if not self.ready:
+			raise Exception("Illegal communication")
 		# noinspection PyTypeChecker
 		super().sequence(json_dict)
 
 	async def send(self, json_dict: dict) -> None:
+		if not self.ready:
+			raise Exception("Illegal communication")
 		# noinspection PyTypeChecker
 		await super().send(json_dict)
 
 	async def feedback(self, json_dict: dict) -> None:
+		if not self.ready:
+			raise Exception("Illegal communication")
 		# noinspection PyTypeChecker
 		await super().feedback(json_dict)
 
 	async def receive(self) -> dict:
+		if not self.ready:
+			raise Exception("Illegal communication")
 		# noinspection PyTypeChecker
 		return await super().receive()
+
+	async def quit(self) -> None:
+		json_dict = {"type": "close"}
+		await self.send(json_dict)
+		await self.feedback(json_dict)
 
 
 class Client(Responder):
@@ -186,7 +198,6 @@ class Host:
 	async def close(self):
 		for node in self.connections:
 			await node.quit()
-
 		self.server.close()
 		await self.server.wait_closed()
 
@@ -207,7 +218,7 @@ class Node(Responder):
 
 	async def broadcast(self, json_dict: dict, tag: str):
 		for node in self.host.connections:
-			if tag in node.subscriptions:  # todo change to channels containing Nodes to avoid for loops
+			if node.ready and tag in node.subscriptions:  # todo change to channels containing Nodes to avoid for loops
 				await node.send(json_dict)
 
 
