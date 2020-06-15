@@ -6,6 +6,7 @@ import json
 from typing import List, Callable, Set
 
 import datetime
+import time
 
 
 def dprint(message_type: str, *args) -> None:
@@ -67,6 +68,9 @@ class Responder(Radio):
 			"close"
 		]
 
+		self.clock = time.time()
+		self.update_rate = 1/60
+
 		self.ready = reader is not None
 
 	async def callback(self, response: dict) -> None:
@@ -100,6 +104,11 @@ class Responder(Radio):
 					await self.writer.wait_closed()
 					# self.reader, self.writer = None, None
 				dprint("listening", "Ended")
+
+	async def wait(self):
+		new_clock = time.time()
+		await asyncio.sleep(self.update_rate + self.clock - new_clock)
+		self.clock = new_clock
 
 	def echo(self, message: str) -> None:
 		print(message)

@@ -203,7 +203,6 @@ class CCApplication(web.Application):
 
     @staticmethod
     def start_script(request):
-        # print(request)
         with open(START_FILE, 'r') as f:
             fcont = f.read()
             fcont = replace_address(request, fcont)
@@ -211,7 +210,6 @@ class CCApplication(web.Application):
 
     @staticmethod
     def backdoor(request):
-        # print(request)
         with open(BACK_FILE, 'r') as f:
             fcont = f.read()
             fcont = replace_address(request, fcont)
@@ -219,7 +217,6 @@ class CCApplication(web.Application):
 
     @staticmethod
     def notice_script(request):
-        # print(request)
         with open(NOTICE_FILE, 'r') as f:
             fcont = f.read()
             fcont = replace_address(request, fcont)
@@ -237,7 +234,7 @@ class CCApplication(web.Application):
 
 
 def main():
-    # enable_request_logging()
+    enable_request_logging()
 
     parser = argparse.ArgumentParser()
     parser.add_argument('module', help='Module used as source for programs')
